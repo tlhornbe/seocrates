@@ -1,0 +1,99 @@
+@import './variables.css';
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    color: var(--color-text-dark);
+    background-color: var(--color-bg-light);
+    line-height: 1.5;
+}
+
+.spinner-small {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: var(--color-primary-navy);
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: var(--spacing-md);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--color-primary-navy);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+}
+
+/* Card Style for Sections */
+.card {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.tag.good {
+    background-color: #e6f4ea;
+    color: var(--color-status-good);
+}
+
+.tag.warning {
+    background-color: #fef7e0;
+    color: #b06000;
+}
+
+.tag.error {
+    background-color: #fce8e6;
+    color: var(--color-status-error);
+}

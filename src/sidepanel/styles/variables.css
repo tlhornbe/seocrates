@@ -1,0 +1,30 @@
+:root {
+  /* Branding Palette */
+  --color-primary-navy: #0e2a47;
+  --color-secondary-red: #d93025;
+  --color-accent-gold: #c5a049;
+  --color-owl-brown: #8d6e63;
+  
+  --color-bg-white: #ffffff;
+  --color-bg-light: #f8f9fa;
+  --color-text-dark: #202124;
+  --color-text-muted: #5f6368;
+  --color-border: #dadce0;
+  
+  --color-status-good: #1e8e3e;
+  --color-status-warning: #f9ab00; /* Darker yellow for text visibility */
+  --color-status-error: #d93025;
+
+  /* Typography */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}

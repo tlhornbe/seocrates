@@ -1,0 +1,58 @@
+{
+    "manifest_version": 3,
+    "name": "SEOCrates",
+    "version": "1.0.0",
+    "description": "A lightweight, high-performance SEO audit tool.",
+    "permissions": [
+        "sidePanel",
+        "activeTab",
+        "scripting",
+        "tabs"
+    ],
+    "host_permissions": [
+        "*://*/*"
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "side_panel": {
+        "default_path": "sidepanel.html"
+    },
+    "action": {
+        "default_title": "Open SEOCrates"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "icons": {
+        "16": "icon16.png",
+        "48": "icon48.png",
+        "128": "icon128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "models/all-MiniLM-L6-v2/*",
+                "models/all-MiniLM-L6-v2/onnx/*",
+                "*.wasm",
+                "*.onnx",
+                "*.json"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}
