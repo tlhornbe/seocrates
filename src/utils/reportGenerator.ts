@@ -1,174 +1,177 @@
 import type { AnalysisResult } from '../types';
 
 export const generateHTMLReport = (data: AnalysisResult): string => {
-  const { title, description, robots, headings, links, social, canonical, wordCount, readability } = data;
-  const date = new Date().toLocaleString();
+    const { title, description, robots, headings, links, social, canonical, wordCount, readability } = data;
+    const date = new Date().toLocaleString();
 
-  // Helper for colors
-  const navy = '#0e2a47';
-  const red = '#d93025';
-  const green = '#1e8e3e';
-  const gray = '#5f6368';
-  const googleBlue = '#1a0dab';
-  const gold = '#c5a049';
+    // Helper for colors
+    const navy = '#0e2a47';
+    const red = '#d93025';
+    const green = '#1e8e3e';
+    const gray = '#5f6368';
+    const gold = '#c5a049';
 
-  const titleColor = title.status === 'good' ? green : (title.status === 'warning' ? '#f9ab00' : red);
-  const descColor = description.status === 'good' ? green : (description.status === 'warning' ? '#f9ab00' : red);
+    const titleColor = title.status === 'good' ? green : (title.status === 'warning' ? '#f9ab00' : red);
+    const descColor = description.status === 'good' ? green : (description.status === 'warning' ? '#f9ab00' : red);
 
-  // Extract Schema Types
-  const schemaTypes = social.schemaOrg.data.map((s: any) => s['@type']).flat().join(', ') || 'None';
+    // Extract Schema Types for the Tech Meta section
+    const schemaTypes = social.schemaOrg.data.map((s: any) => s['@type']).flat().filter(Boolean).join(', ') || 'None';
 
-  let html = `
+    let html = `
     <div style="font-family: Arial, sans-serif; color: #202124; max-width: 800px; line-height: 1.5;">
-      <div style="display: flex; align-items: center; border-bottom: 2px solid ${gold}; padding-bottom: 8px; margin-bottom: 20px;">
-        <span style="font-size: 24px; margin-right: 10px;">🦉</span>
-        <h1 style="color: ${navy}; margin: 0; font-size: 24px;">SEOCrates Audit Report</h1>
-      </div>
-      <p style="color: ${gray}; font-size: 12px; margin-top: -10px; margin-bottom: 20px;">Generated on: ${date}</p>
-
-      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px;">1. Executive Summary</h2>
       
-      <!-- Content Metrics Grid -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
-        <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9; font-weight: bold; width: 150px;">Word Count</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${wordCount} words</td>
-        </tr>
-        <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9; font-weight: bold;">Reading Level</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">
-                ${readability.grade} <span style="color: ${gray}; font-size: 12px;">(Grade ${readability.score})</span>
-            </td>
-        </tr>
-        <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9; font-weight: bold;">Indexability</td>
-            <td style="padding: 8px; border: 1px solid #ddd; color: ${robots.isIndexable ? green : red}; font-weight: bold;">
-                ${robots.isIndexable ? 'Indexable' : 'NoIndex found'}
-            </td>
-        </tr>
-      </table>
-
-      <!-- Google SERP Visual -->
-      <h3 style="font-size: 16px; margin-bottom: 10px; color: ${navy};">Google SERP Preview</h3>
-      <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #dfe1e5; border-radius: 8px; background: #fff; max-width: 600px;">
-        <div style="display: flex; align-items: center; margin-bottom: 4px;">
-             <div style="width: 26px; height: 26px; background: #f1f3f4; border-radius: 50%; display: flex; align-items: center; justifyContent: center; margin-right: 12px; font-size: 12px; color: #555;">G</div>
-             <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 14px; color: #202124; line-height: 1.3;">${canonical.currentUrl ? new URL(canonical.currentUrl).hostname : 'example.com'}</span>
-                <span style="font-size: 12px; color: #5f6368; line-height: 1.3;">${data.canonical?.currentUrl || 'https://example.com'}</span>
-             </div>
-        </div>
-        <div style="font-size: 20px; color: ${googleBlue}; cursor: pointer; margin-bottom: 4px; line-height: 1.3;">
-            ${title.text || 'Missing Title'}
-        </div>
-        <div style="font-size: 14px; color: #4d5156; line-height: 1.58;">
-            ${description.text || 'No description provided.'}
-        </div>
-      </div>
-
+      <!-- Header: Solid Gold Line -->
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 8px; font-weight: bold; width: 140px;">Page Title</td>
-          <td style="padding: 8px;">
-            <div style="font-size: 12px; color: ${titleColor};">(${title.length} chars) - ${title.status.toUpperCase()}</div>
-          </td>
+        <tr>
+            <td style="width: 50px; vertical-align: middle; padding-bottom: 12px;">
+                <span style="font-size: 32px;">🦉</span>
+            </td>
+            <td style="vertical-align: middle; padding-bottom: 12px;">
+                <h1 style="color: ${navy}; margin: 0; font-size: 26px;">SEOCrates Audit Report</h1>
+            </td>
         </tr>
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 8px; font-weight: bold;">Meta Desc</td>
-          <td style="padding: 8px;">
-            <div style="font-size: 12px; color: ${descColor};">(${description.length} chars) - ${description.status.toUpperCase()}</div>
-          </td>
+        <tr>
+            <td colspan="2" style="border-top: 5px solid ${gold}; padding: 0; margin: 0; height: 1px;">&nbsp;</td>
         </tr>
       </table>
 
-      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">2. Heading Structure</h2>
-      <div style="margin-left: 10px; margin-bottom: 20px;">
+      <p style="color: ${gray}; font-size: 11px; margin-top: -15px; margin-bottom: 25px;">Generated on: ${date}</p>
+
+      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 20px; margin-top: 30px;">1. Page Information</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px;">
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; width: 160px; vertical-align: top; color: ${navy};">Page Title</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                <div style="font-weight: 500; margin-bottom: 2px; color: #000;">${title.text || '<em>Missing</em>'}</div>
+                <div style="font-size: 12px; color: ${titleColor};">
+                    (${title.length} chars) - ${title.status.toUpperCase()} 
+                    ${title.reason ? `<span style="color: ${gray}; margin-left:8px;">• ${title.reason}</span>` : ''}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; vertical-align: top; color: ${navy};">Meta Description</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                <div style="font-weight: 500; margin-bottom: 2px; color: #000;">${description.text || '<em>Missing</em>'}</div>
+                <div style="font-size: 12px; color: ${descColor};">
+                    (${description.length} chars) - ${description.status.toUpperCase()}
+                    ${description.reason ? `<span style="color: ${gray}; margin-left:8px;">• ${description.reason}</span>` : ''}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: ${navy};">Canonical URL</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                <div style="color: ${canonical.isMatch ? green : '#d35400'}; font-weight: bold; margin-bottom: 4px;">
+                    ${canonical.isMatch ? '✅ Matches URL' : '⚠️ Mismatch Found'}
+                </div>
+                ${!canonical.isMatch ? `
+                    <div style="font-size: 11px; color: ${gray};">Current URL: ${canonical.currentUrl}</div>
+                    <div style="font-size: 11px; color: ${navy}; font-weight: 500;">Target: ${canonical.href}</div>
+                ` : `
+                    <div style="font-size: 11px; color: ${gray};">Target: ${canonical.href}</div>
+                `}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: ${navy};">Indexability</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; color: ${robots.isIndexable ? green : red}; font-weight: bold;">
+                ${robots.isIndexable ? 'Indexable' : 'NoIndex detected'}
+            </td>
+        </tr>
+      </table>
+
+      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 35px; font-size: 20px;">2. Content Metrics</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px;">
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; width: 160px; color: ${navy};">Word Count</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">${wordCount.toLocaleString()} words</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: ${navy};">Reading Level</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                <span style="background: ${readability.color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 8px; font-weight: bold;">Score ${readability.score} / 18</span>
+                <span style="color: ${gray}; font-size: 13px;">${readability.grade}</span>
+            </td>
+        </tr>
+      </table>
+
+      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 35px; font-size: 20px;">3. Heading Structure</h2>
+      <div style="margin-left: 0; margin-bottom: 30px; margin-top: 15px;">
   `;
 
-  if (headings.length === 0) {
-    html += `<p style="color: ${gray}; font-style: italic;">No headings found.</p>`;
-  } else {
-    headings.forEach(h => {
-      const indent = (h.level - 1) * 20;
-      const errorStyle = h.error ? `color: ${red}; font-weight: bold;` : '';
-      const errorText = h.error ? ` <span style="background: #fce8e6; color: ${red}; padding: 2px 4px; font-size: 11px;">⚠️ ${h.error}</span>` : '';
+    if (headings.length === 0) {
+        html += `<p style="color: ${gray}; font-style: italic;">No headings found.</p>`;
+    } else {
+        headings.forEach(h => {
+            const indent = (h.level - 1) * 24; // Increased indent to 24px
+            const errorText = h.error ? ` <span style="color: ${red}; font-size: 11px; margin-left: 8px;">⚠️ ${h.error}</span>` : '';
 
-      html += `
-        <div style="margin-left: ${indent}px; margin-bottom: 4px; font-size: 13px; ${errorStyle}">
-          <span style="color: ${navy}; font-weight: bold;">H${h.level}</span>: ${h.text || '<em>Empty</em>'}
+            html += `
+        <div style="padding: 1px 0; margin-bottom: 2px; margin-left: ${indent}px; font-size: 13px; line-height: 1.3;">
+          <strong style="color: ${navy}; font-size: 12px; margin-right: 6px;">H${h.level}</strong>
+          <span style="color: #333;">${h.text || '<em>Empty</em>'}</span>
           ${errorText}
         </div>
       `;
-    });
-  }
+        });
+    }
 
-  html += `
+    html += `
       </div>
 
-      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">3. Link Overview</h2>
-      <p><strong>Total Links:</strong> ${links.counts.total} (Internal: ${links.counts.internal} | External: ${links.counts.external})</p>
+      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 35px; font-size: 20px;">4. Link Overview</h2>
+      <p style="margin-bottom: 15px; color: ${gray}; font-size: 13px;">
+         <strong>Total Links:</strong> ${links.counts.total} (Internal: ${links.counts.internal} | External: ${links.counts.external})
+      </p>
 
-      <div style="margin-top: 15px;">
-           <h3 style="font-size: 14px; margin-bottom: 8px; color: ${navy};">Internal Links (${links.internal.length})</h3>
-           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <tr style="background: #f1f3f4; border-bottom: 1px solid #ddd;">
-                    <th style="text-align: left; padding: 8px; width: 40%; border-right: 1px solid #ddd;">Anchor Text</th>
-                     <th style="text-align: left; padding: 8px;">Destination URL</th>
-                </tr>
+      <div style="margin-top: 10px;">
+           <h3 style="font-size: 15px; margin-bottom: 8px; color: ${navy};">Internal Links (${links.internal.length})</h3>
+           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 25px;">
                 ${links.internal.map(l => `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 8px; vertical-align: top; border-right: 1px solid #ddd;">${l.anchor || '<em>No Text</em>'}</td>
-                        <td style="padding: 8px; color: ${gray}; word-break: break-all;">${l.href}</td>
+                    <tr>
+                        <td style="padding: 5px 10px 5px 0; vertical-align: top; width: 30%; font-weight: 500; color: #202124; border-bottom: 1px solid #fafafa;">${l.anchor || '<em>No Text</em>'}</td>
+                        <td style="padding: 5px 0; color: ${gray}; word-break: break-all; border-bottom: 1px solid #fafafa;">${l.href}</td>
                     </tr>
                 `).join('')}
            </table>
 
-           <h3 style="font-size: 14px; margin-bottom: 8px; color: ${navy};">External Links (${links.external.length})</h3>
-           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <tr style="background: #f1f3f4; border-bottom: 1px solid #ddd;">
-                    <th style="text-align: left; padding: 8px; width: 40%; border-right: 1px solid #ddd;">Anchor Text</th>
-                     <th style="text-align: left; padding: 8px;">Destination URL</th>
-                </tr>
+           <h3 style="font-size: 15px; margin-bottom: 8px; color: ${navy};">External Links (${links.external.length})</h3>
+           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 25px;">
                 ${links.external.map(l => `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 8px; vertical-align: top; border-right: 1px solid #ddd;">${l.anchor || '<em>No Text</em>'}</td>
-                        <td style="padding: 8px; color: ${gray}; word-break: break-all;">${l.href}</td>
+                    <tr>
+                        <td style="padding: 5px 10px 5px 0; vertical-align: top; width: 30%; font-weight: 500; color: #202124; border-bottom: 1px solid #fafafa;">${l.anchor || '<em>No Text</em>'}</td>
+                        <td style="padding: 5px 0; color: ${gray}; word-break: break-all; border-bottom: 1px solid #fafafa;">${l.href}</td>
                     </tr>
                 `).join('')}
            </table>
       </div>
       
-      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">4. Technical Checks</h2>
-      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px; font-weight: bold; width: 150px;">Canonical URL</td>
-            <td style="padding: 8px;">
-                ${canonical.isMatch ? '✅ Matches URL' : '⚠️ <strong>Mismatch</strong>'}
-                ${!canonical.isMatch && canonical.href ? `<div style="font-size:12px; color:${gray}; margin-top:2px;">Defined: ${canonical.href}</div>` : ''}
-            </td>
-        </tr>
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px; font-weight: bold;">Schema.org</td>
-            <td style="padding: 8px;">
-                ${social.schemaOrg.exists ? '✅ Found' : '❌ Missing'}
-                ${social.schemaOrg.exists ? `<div style="font-size:12px; color:${gray}; margin-top:2px;">Types: ${schemaTypes}</div>` : ''}
-            </td>
-        </tr>
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px; font-weight: bold;">Open Graph</td>
-            <td style="padding: 8px;">
+      <h2 style="color: ${navy}; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 35px; font-size: 20px;">5. Technical & Social Meta</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px;">
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; width: 160px; color: ${navy};">Open Graph</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
                 ${social.openGraph.exists ? '✅ Found' : '❌ Missing'}
             </td>
         </tr>
-         <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px; font-weight: bold;">Twitter Card</td>
-            <td style="padding: 8px;">
+         <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: ${navy};">Twitter Card</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
                 ${social.twitterCard.exists ? '✅ Found' : '❌ Missing'}
             </td>
         </tr>
+        <tr>
+            <td style="padding: 10px 10px 10px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: ${navy};">Schema Types</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; color: ${gray};">
+                ${schemaTypes}
+            </td>
+        </tr>
       </table>
+
     </div>
   `;
 
-  return html;
+    return html;
 };

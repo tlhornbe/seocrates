@@ -11,7 +11,7 @@ let pendingResponses: Array<(response: AnalysisResult | null) => void> = [];
 
 // Configuration
 const OBSERVER_TIMEOUT_MS = 5000; // 5 seconds max
-const DEBOUNCE_DELAY_MS = 500;    // Wait for 500ms of silence
+const DEBOUNCE_DELAY_MS = 800;    // Wait for 800ms of silence
 const STABILITY_THRESHOLD = 200;  // If word count > 200, we might be good
 const LOW_WORD_COUNT_THRESHOLD = 50;
 
@@ -91,14 +91,53 @@ const scrapePageInternal = (): AnalysisResult => {
         const style = window.getComputedStyle(element);
         if (style.display === 'none') return false;
         if (style.visibility === 'hidden') return false;
-        if (element.closest('nav, footer')) return false;
+        if (element.closest('nav, footer, aside')) return false;
 
         let parent = element.parentElement;
         while (parent && parent !== document.body) {
-            const classStr = parent.getAttribute('class') || '';
-            if (/footer|nav|menu|sidebar/i.test(classStr)) {
+            const tagName = parent.tagName.toLowerCase();
+            const role = (parent.getAttribute('role') || '').toLowerCase();
+            const id = (parent.getAttribute('id') || '').toLowerCase();
+            const classStr = (parent.getAttribute('class') || '').toLowerCase();
+
+            // 1. Safety Anchors: If we hit these, we are definitely in the main content.
+            // TRUST THE HEADER: If we are inside one of these, we stop checking.
+            if (
+                ['main', 'article'].includes(tagName) ||
+                role === 'main' ||
+                id === 'main' ||
+                id === 'content' ||
+                id === 'main-content' ||
+                classStr.includes('post-') || // 'post-content', 'post-header', etc.
+                classStr.includes('entry-') ||
+                classStr.includes('article-')
+            ) {
+                return true;
+            }
+
+            // 2. Hard Rejects: Explicit sidebar/nav elements
+            // role="banner" usually targets the top-level site header we want to skip
+            if (tagName === 'aside' || role === 'complementary' || role === 'navigation' || role === 'banner' || tagName === 'nav') {
                 return false;
             }
+
+            // 3. Class-based soft rejects
+            // Use word boundaries \b to avoid matching 'post-nav-link' or 'layout-menu'
+            if (/\b(footer|menu|widget-area)\b/.test(classStr)) {
+                return false;
+            }
+
+            // Special check for 'nav' ONLY if it's not a wrapper
+            if (/\bnav\b/.test(classStr) && !/content|post|article|main/.test(classStr)) {
+                return false;
+            }
+
+            // Special check for 'sidebar' class ONLY if it's the exact class or specifically 'sidebar-col'
+            // Avoid matching 'sidebar-layout', 'with-sidebar', etc.
+            if (/\bsidebar\b/.test(classStr) && !/layout|wrapper|container|page|section|with-/.test(classStr)) {
+                return false;
+            }
+
             parent = parent.parentElement;
         }
         return true;
