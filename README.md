@@ -35,7 +35,7 @@
 Your privacy is paramount. SEOCrates is built on the principle of data sovereignty.
 - **No Data Collection**: We do not collect or store any browsing data.
 - **Local Processing**: All ML embeddings and analysis happen in your browser.
-- **Read our full Privacy Policy**: [tlhornbe.github.io/seocrates/privacy](https://tlhornbe.github.io/seocrates/privacy)
+- **Read our full Privacy Policy**: [https://tlhornbe.github.io/seocrates/privacy.html](https://tlhornbe.github.io/seocrates/privacy.html)
 
 ---
 
