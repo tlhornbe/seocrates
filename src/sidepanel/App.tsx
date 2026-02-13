@@ -157,7 +157,7 @@ function App() {
                                     files: ['content.js']
                                 });
                                 // Retry analysis after injection
-                                setTimeout(() => performAnalysis(true), 100);
+                                setTimeout(() => performAnalysis(true), 300);
                             } catch (injectErr) {
                                 console.error('Injection failed:', injectErr);
                                 setData(null);

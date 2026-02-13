@@ -321,6 +321,15 @@ const initObserver = () => {
             checkStability();
         }
     }, OBSERVER_TIMEOUT_MS);
+
+    // Initial Silence Check: If the page is already static, we won't get mutations.
+    // Trigger the same debounce logic to finish if nothing happens.
+    if (!debounceTimer) {
+        debounceTimer = setTimeout(() => {
+            console.log('SEOCrates: Initial stability check (static page).');
+            checkStability();
+        }, DEBOUNCE_DELAY_MS);
+    }
 };
 
 // Global Message Listener - Registered Immediately
