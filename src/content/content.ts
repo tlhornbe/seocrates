@@ -9,6 +9,14 @@ let killSwitchTimer: ReturnType<typeof setTimeout> | null = null;
 let currentWordCount = 0;
 let pendingResponses: Array<(response: AnalysisResult | null) => void> = [];
 
+// --- Idempotency Guard ---
+if ((window as any).SEOCratesInitialized) {
+    // If already initialized, just ensure listener is active (it should be)
+    // and exit to prevent double-observer or duplicate listeners.
+    throw new Error('SEOCrates already initialized');
+}
+(window as any).SEOCratesInitialized = true;
+
 // Configuration
 const OBSERVER_TIMEOUT_MS = 5000; // 5 seconds max
 const DEBOUNCE_DELAY_MS = 800;    // Wait for 800ms of silence
@@ -79,67 +87,17 @@ const scrapePageInternal = (): AnalysisResult => {
     // Headings (Existing logic)
     const headingElements = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
 
-    // Filter headings based on User Rules
+    // Unified Heading Extraction (Global Scan)
+    // We want ALL visible headings, even in nav/footer, to ensure complete structure audit.
     const visibleHeadings = headingElements.filter(el => {
         const element = el as HTMLElement;
 
-        // Rule 1: Physical space check (offsetParent check mostly filters display:none)
-        // NOTE: For "Deep Read", do we want hidden headers? usually SEO cares about visible ones.
-        // Keeping existing visibility logic for HEADINGS as it seems distinct from "Word Count" logic.
+        // Rule 1: Visibility check
         if (element.offsetParent === null) return false;
-
         const style = window.getComputedStyle(element);
         if (style.display === 'none') return false;
         if (style.visibility === 'hidden') return false;
-        if (element.closest('nav, footer, aside')) return false;
 
-        let parent = element.parentElement;
-        while (parent && parent !== document.body) {
-            const tagName = parent.tagName.toLowerCase();
-            const role = (parent.getAttribute('role') || '').toLowerCase();
-            const id = (parent.getAttribute('id') || '').toLowerCase();
-            const classStr = (parent.getAttribute('class') || '').toLowerCase();
-
-            // 1. Safety Anchors: If we hit these, we are definitely in the main content.
-            // TRUST THE HEADER: If we are inside one of these, we stop checking.
-            if (
-                ['main', 'article'].includes(tagName) ||
-                role === 'main' ||
-                id === 'main' ||
-                id === 'content' ||
-                id === 'main-content' ||
-                classStr.includes('post-') || // 'post-content', 'post-header', etc.
-                classStr.includes('entry-') ||
-                classStr.includes('article-')
-            ) {
-                return true;
-            }
-
-            // 2. Hard Rejects: Explicit sidebar/nav elements
-            // role="banner" usually targets the top-level site header we want to skip
-            if (tagName === 'aside' || role === 'complementary' || role === 'navigation' || role === 'banner' || tagName === 'nav') {
-                return false;
-            }
-
-            // 3. Class-based soft rejects
-            // Use word boundaries \b to avoid matching 'post-nav-link' or 'layout-menu'
-            if (/\b(footer|menu|widget-area)\b/.test(classStr)) {
-                return false;
-            }
-
-            // Special check for 'nav' ONLY if it's not a wrapper
-            if (/\bnav\b/.test(classStr) && !/content|post|article|main/.test(classStr)) {
-                return false;
-            }
-
-            // Special check for 'sidebar' class ONLY if it's the exact class or specifically 'sidebar-col'
-            // Avoid matching 'sidebar-layout', 'with-sidebar', etc.
-            if (/\bsidebar\b/.test(classStr) && !/layout|wrapper|container|page|section|with-/.test(classStr)) {
-                return false;
-            }
-
-            parent = parent.parentElement;
-        }
         return true;
     });
 

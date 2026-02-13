@@ -147,9 +147,26 @@ function App() {
                         }
 
                     } catch (err) {
-                        console.warn('Could not connect to content script:', err);
-                        setData(null);
-                        setLoading(false);
+                        console.warn('Could not connect to content script. Attempting injection...', err);
+
+                        // --- ActiveTab Injection Fallback ---
+                        if (activeTab.id) {
+                            try {
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: activeTab.id },
+                                    files: ['content.js']
+                                });
+                                // Retry analysis after injection
+                                setTimeout(() => performAnalysis(true), 100);
+                            } catch (injectErr) {
+                                console.error('Injection failed:', injectErr);
+                                setData(null);
+                                setLoading(false);
+                            }
+                        } else {
+                            setData(null);
+                            setLoading(false);
+                        }
                     }
                 } else {
                     setLoading(false);

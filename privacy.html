@@ -131,30 +131,30 @@
         </header>
 
         <section>
-            <h2>1. Data Access Disclosure</h2>
-            <p>SEOCrates accesses the Document Object Model (DOM) of the active browser tab to extract technical SEO
-                metadata, heading structures, and link data. This access is performed solely for the purpose of
-                providing on-page SEO auditing and alignment scoring.</p>
+            <h2>1. Data Access & ActiveTab Permissions</h2>
+            <p>SEOCrates operates using the <strong>ActiveTab</strong> permission model. This means the extension can
+                only access the Document Object Model (DOM) of the current tab when you explicitly invoke it (by
+                clicking the extension icon or sidebar). We do not have persistent access to all websites you visit.</p>
         </section>
 
         <section>
-            <h2>2. Local Processing & Privacy</h2>
-            <p>All semantic analysis and vector embedding generation are performed locally on your device using
-                WebAssembly (WASM) and Transformers.js. <strong>No data is ever transmitted to a server or external
-                    third party.</strong> Your content stays entirely within your browser environment.</p>
+            <h2>2. Local Processing (WASM)</h2>
+            <p>All semantic analysis, vector embedding, and topic modeling are performed <strong>locally on your
+                    device</strong> using WebAssembly (WASM) and Transformers.js. No data is ever transmitted to a
+                central server or third-party API for analysis.</p>
         </section>
 
         <div class="card-accent">
-            <h2>3. No History or Content Storage</h2>
-            <p>SEOCrates does not collect, store, or transmit your browsing history, website content, or personal
-                information. The extension provides real-time analysis without persisting your data beyond the active
-                session.</p>
+            <h2>3. Zero Data Collection</h2>
+            <p><strong>No user data, browsing history, or website content is ever collected, stored, or
+                    transmitted.</strong> Your audit data lives locally in your browser's temporary memory for the
+                duration of the analysis only.</p>
         </div>
 
         <section>
             <h2>4. Third Parties</h2>
-            <p>Because no data is collected, no data is shared with third parties. SEOCrates is built for privacy and
-                performance, operating as a standalone tool on your machine.</p>
+            <p>Because no data is collected, no data is shared with third parties. SEOCrates is a standalone,
+                privacy-first utility.</p>
         </section>
 
         <div class="footer">

@@ -61,7 +61,12 @@ const SerpPreview: React.FC<SerpPreviewProps> = ({ title, description, url = '' 
                         flexShrink: 0
                     }}>
                         <img
-                            src={`https://www.google.com/s2/favicons?domain=${urlData.domain || 'example.com'}&sz=32`}
+                            src={(() => {
+                                const faviconUrl = new URL(chrome.runtime.getURL('/_favicon/'));
+                                faviconUrl.searchParams.set('pageUrl', urlData.fullPath || 'https://example.com');
+                                faviconUrl.searchParams.set('size', '32');
+                                return faviconUrl.toString();
+                            })()}
                             alt=""
                             style={{ width: '16px', height: '16px' }}
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
