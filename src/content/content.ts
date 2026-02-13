@@ -9,7 +9,15 @@ let killSwitchTimer: ReturnType<typeof setTimeout> | null = null;
 let currentWordCount = 0;
 let pendingResponses: Array<(response: AnalysisResult | null) => void> = [];
 
-// --- Idempotency Guard ---
+// --- PING Listener (Always Active) ---
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    if (request.type === 'PING') {
+        sendResponse('PONG');
+        return true;
+    }
+});
+
+// --- Idempotency Guard (Rest of Logic) ---
 if (!(window as any).SEOCratesInitialized) {
     (window as any).SEOCratesInitialized = true;
 
@@ -403,11 +411,6 @@ if (!(window as any).SEOCratesInitialized) {
 
     // --- Message Listener Registration ---
     chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-        if (request.type === 'PING') {
-            sendResponse('PONG');
-            return true;
-        }
-
         if (request.type === 'ANALYZE') {
             try {
                 if (isStable) {

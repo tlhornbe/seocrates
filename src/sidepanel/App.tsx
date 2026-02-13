@@ -87,89 +87,82 @@ function App() {
                     // Reset semantic data immediately to avoid showing stale data from previous tab while loading
                     setSemanticData(null);
 
-                    // Send message to content script
+                    // --- Robust Analysis Flow ---
+                    const ensureContentScript = async (tabId: number): Promise<boolean> => {
+                        try {
+                            // 1. Try to PING
+                            await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+                            return true;
+                        } catch (e) {
+                            // 2. If PING fails, Inject
+                            console.log('SEOCrates: Content script not found, injecting...');
+                            try {
+                                await chrome.scripting.executeScript({
+                                    target: { tabId },
+                                    files: ['content.js']
+                                });
+                                // Wait a moment for initialization
+                                await new Promise(resolve => setTimeout(resolve, 300));
+                                return true;
+                            } catch (injectErr) {
+                                console.error('SEOCrates: Injection failed:', injectErr);
+                                return false;
+                            }
+                        }
+                    };
+
                     try {
-                        const response = await chrome.tabs.sendMessage(activeTab.id, { type: 'ANALYZE' }) as AnalysisResult | null;
+                        const tabId = activeTab.id as number;
+                        const isReady = await ensureContentScript(tabId);
+
+                        if (!isReady) {
+                            setData(null);
+                            setLoading(false);
+                            return;
+                        }
+
+                        // 3. Send ANALYZE
+                        const response = await chrome.tabs.sendMessage(tabId, { type: 'ANALYZE' }) as AnalysisResult | null;
+                        console.log('SEOCrates: Analysis response received');
 
                         setData(response);
                         setLoading(false);
 
-                        // Trigger Semantic Analysis independently
-                        setSemanticLoading(true);
+                        if (response) {
+                            // Trigger Semantic Analysis independently
+                            setSemanticLoading(true);
+                            try {
+                                const payloadResponse = await chrome.tabs.sendMessage(tabId, { type: 'GET_WEIGHTED_TEXT' }) as SemanticPayload | null;
+                                if (payloadResponse && payloadResponse.body) {
+                                    setTimeout(async () => {
+                                        try {
+                                            const headingText = response.headings
+                                                .filter(h => h.level <= 2)
+                                                .map(h => h.text);
+                                            const result = await generateTopicalFocus(payloadResponse, headingText);
+                                            setSemanticData(result);
+                                            setSemanticLoading(false);
 
-                        // We know activeTab.id is defined here because we checked it above
-                        const tabId = activeTab.id as number;
-
-                        try {
-                            // --- NEW: Request Weighted Payload instead of raw text ---
-                            const payloadResponse = await chrome.tabs.sendMessage(tabId, { type: 'GET_WEIGHTED_TEXT' }) as SemanticPayload | null;
-                            console.log('SEOCrates: GET_WEIGHTED_TEXT response received');
-
-                            if (payloadResponse && payloadResponse.body && payloadResponse.body.length > 50) {
-                                // Request idle callback or timeout to let UI render first
-                                setTimeout(async () => {
-                                    try {
-                                        // Extract H1/H2 text for boosting (legacy support for boosting logic if needed, but payload has H1)
-                                        // We still pass headers array for the term boosting logic in semantic.ts
-                                        const headingText = response ? response.headings
-                                            .filter(h => h.level <= 2)
-                                            .map(h => h.text) : [];
-
-                                        console.log('SEOCrates: Starting generation with weighted payload...');
-
-                                        // Pass the structured payload directly
-                                        const result = await generateTopicalFocus(payloadResponse, headingText);
-
-                                        const fullSemantic = { ...result };
-                                        setSemanticData(fullSemantic);
-                                        setSemanticLoading(false);
-
-                                        // Update Cache
-                                        if (currentUrl && response) {
-                                            analysisCache.current.set(currentUrl, {
-                                                data: response,
-                                                semantic: fullSemantic
-                                            });
+                                            if (currentUrl) {
+                                                analysisCache.current.set(currentUrl, { data: response, semantic: result });
+                                            }
+                                        } catch (e) {
+                                            console.error('Semantic Error:', e);
+                                            setSemanticLoading(false);
                                         }
-
-                                    } catch (e) {
-                                        console.error('Semantic Error:', e);
-                                        setSemanticLoading(false);
-                                    }
-                                }, 100);
-                            } else {
-                                console.warn('SEOCrates: Insufficient or empty text received.');
+                                    }, 100);
+                                } else {
+                                    setSemanticLoading(false);
+                                }
+                            } catch (textError) {
+                                console.warn('SEOCrates: Semantic payload failed:', textError);
                                 setSemanticLoading(false);
                             }
-                        } catch (textError) {
-                            console.warn('SEOCrates: GET_WEIGHTED_TEXT failed (content script likely not ready):', textError);
-                            setSemanticLoading(false);
                         }
-
                     } catch (err) {
-                        console.warn('Could not connect to content script. Attempting injection...', err);
-
-                        // --- ActiveTab Injection Fallback ---
-                        // Only attempt injection if we haven't already tried it for this specific call (force=true implies retry)
-                        if (activeTab.id && !force) {
-                            try {
-                                await chrome.scripting.executeScript({
-                                    target: { tabId: activeTab.id },
-                                    files: ['content.js']
-                                });
-                                // Retry analysis after injection with a slightly longer delay to ensure script init
-                                setTimeout(() => performAnalysis(true), 500);
-                            } catch (injectErr) {
-                                console.error('Injection failed:', injectErr);
-                                setData(null);
-                                setLoading(false);
-                            }
-                        } else {
-                            // If it fails even after injection, or no tab ID
-                            console.error('Analysis failed after injection retry or no tab available.');
-                            setData(null);
-                            setLoading(false);
-                        }
+                        console.error('SEOCrates: Analysis flow failed:', err);
+                        setData(null);
+                        setLoading(false);
                     }
                 } else {
                     setLoading(false);
