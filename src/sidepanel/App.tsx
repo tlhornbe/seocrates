@@ -57,78 +57,104 @@ function App() {
 
     const lastAnalyzedUrl = useRef<string | null>(null);
     const analysisCache = useRef<Map<string, { data: AnalysisResult, semantic: SemanticResult }>>(new Map());
+    const performAnalysisRef = useRef<(force: boolean) => void>(() => {});
+
+    const isAnalyzableUrl = (url: string | undefined): boolean => {
+        if (!url) return false;
+        const restricted = ['chrome://', 'chrome-extension://', 'about:', 'edge://', 'data:', 'devtools:', 'view-source:'];
+        return !restricted.some(prefix => url.startsWith(prefix));
+    };
 
     useEffect(() => {
         const performAnalysis = async (force: boolean = false) => {
             // Query for active tab
             chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
                 const activeTab = tabs[0];
-                if (activeTab?.id) {
-                    const currentUrl = activeTab.url;
+                if (activeTab?.id === undefined) {
+                    setLoading(false);
+                    return;
+                }
+                const currentUrl = activeTab.url;
 
-                    // Check if we can skip analysis (same URL active)
-                    if (!force && currentUrl === lastAnalyzedUrl.current && data) {
-                        return;
-                    }
+                if (!isAnalyzableUrl(currentUrl)) {
+                    setData(null);
+                    setLoading(false);
+                    return;
+                }
 
-                    // Check Cache (switching back to previous tab)
-                    if (!force && currentUrl && analysisCache.current.has(currentUrl)) {
-                        const cached = analysisCache.current.get(currentUrl)!;
-                        setData(cached.data);
-                        setSemanticData(cached.semantic);
-                        setLoading(false);
-                        setSemanticLoading(false);
-                        lastAnalyzedUrl.current = currentUrl;
-                        return;
-                    }
+                // Check if we can skip analysis (same URL active)
+                if (!force && currentUrl === lastAnalyzedUrl.current && data) {
+                    setLoading(false);
+                    return;
+                }
 
-                    setLoading(true);
-                    lastAnalyzedUrl.current = currentUrl || null;
-                    // Reset semantic data immediately to avoid showing stale data from previous tab while loading
-                    setSemanticData(null);
+                // Check Cache (switching back to previous tab)
+                if (!force && currentUrl && analysisCache.current.has(currentUrl)) {
+                    const cached = analysisCache.current.get(currentUrl)!;
+                    setData(cached.data);
+                    setSemanticData(cached.semantic);
+                    setLoading(false);
+                    setSemanticLoading(false);
+                    lastAnalyzedUrl.current = currentUrl;
+                    return;
+                }
 
-                    // --- Robust Analysis Flow ---
-                    const ensureContentScript = async (tabId: number): Promise<boolean> => {
+                setLoading(true);
+                lastAnalyzedUrl.current = currentUrl || null;
+                setSemanticData(null);
+
+                // --- Robust Analysis Flow ---
+                const ensureContentScript = async (tabId: number): Promise<boolean> => {
+                    const pingReady = async (): Promise<boolean> => {
                         try {
-                            // 1. Try to PING
                             await chrome.tabs.sendMessage(tabId, { type: 'PING' });
                             return true;
-                        } catch (e) {
-                            // 2. If PING fails, Inject
-                            console.log('SEOCrates: Content script not found, injecting...');
-                            try {
-                                await chrome.scripting.executeScript({
-                                    target: { tabId },
-                                    files: ['content.js']
-                                });
-                                // Wait a moment for initialization
-                                await new Promise(resolve => setTimeout(resolve, 300));
-                                return true;
-                            } catch (injectErr) {
-                                console.error('SEOCrates: Injection failed:', injectErr);
-                                return false;
-                            }
+                        } catch {
+                            return false;
                         }
                     };
 
+                    if (await pingReady()) return true;
+
+                    console.log('SEOCrates: Content script not found, injecting...');
                     try {
-                        const tabId = activeTab.id as number;
-                        const isReady = await ensureContentScript(tabId);
+                        await chrome.scripting.executeScript({
+                            target: { tabId },
+                            files: ['content.js']
+                        });
+                    } catch (injectErr) {
+                        console.error('SEOCrates: Injection failed:', injectErr);
+                        return false;
+                    }
 
-                        if (!isReady) {
-                            setData(null);
-                            setLoading(false);
-                            return;
-                        }
+                    // Poll until content script is ready (up to 3s)
+                    const deadline = Date.now() + 3000;
+                    while (Date.now() < deadline) {
+                        await new Promise(r => setTimeout(r, 150));
+                        if (await pingReady()) return true;
+                    }
+                    console.error('SEOCrates: Content script did not become ready after injection');
+                    return false;
+                };
 
-                        // 3. Send ANALYZE
-                        const response = await chrome.tabs.sendMessage(tabId, { type: 'ANALYZE' }) as AnalysisResult | null;
-                        console.log('SEOCrates: Analysis response received');
+                try {
+                    const tabId = activeTab.id as number;
+                    const isReady = await ensureContentScript(tabId);
 
-                        setData(response);
+                    if (!isReady) {
+                        setData(null);
                         setLoading(false);
+                        return;
+                    }
 
-                        if (response) {
+                    // 3. Send ANALYZE (content script may respond async after stability)
+                    const response = await chrome.tabs.sendMessage(tabId, { type: 'ANALYZE' }) as AnalysisResult | null;
+                    console.log('SEOCrates: Analysis response received');
+
+                    setData(response);
+                    setLoading(false);
+
+                    if (response) {
                             // Trigger Semantic Analysis independently
                             setSemanticLoading(true);
                             try {
@@ -159,16 +185,15 @@ function App() {
                                 setSemanticLoading(false);
                             }
                         }
-                    } catch (err) {
-                        console.error('SEOCrates: Analysis flow failed:', err);
-                        setData(null);
-                        setLoading(false);
-                    }
-                } else {
+                } catch (err) {
+                    console.error('SEOCrates: Analysis flow failed:', err);
+                    setData(null);
                     setLoading(false);
                 }
             });
         };
+
+        performAnalysisRef.current = performAnalysis;
 
         // Initial run
         performAnalysis(false); // Changed to false to use cache on popup open if available
@@ -208,14 +233,11 @@ function App() {
         return (
             <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
                 <h3>Ready to Analyze</h3>
-                <p style={{ marginTop: '10px', fontSize: '13px' }}>
-                    Please reload the page or navigate to a new URL to trigger the analysis if it doesn't appear.
-                    <br /><br />
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{ background: 'var(--color-primary-navy)', color: 'white', padding: '8px 16px', borderRadius: '4px' }}>
-                        Retry
-                    </button>
+                <p style={{ marginTop: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+                    Navigate to the page you want to audit and open the side panel. The analysis will run automatically.
+                </p>
+                <p style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
+                    If you're on a restricted page (like chrome:// URLs or browser settings), try a regular website instead.
                 </p>
             </div>
         );
