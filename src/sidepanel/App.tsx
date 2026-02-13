@@ -150,20 +150,23 @@ function App() {
                         console.warn('Could not connect to content script. Attempting injection...', err);
 
                         // --- ActiveTab Injection Fallback ---
-                        if (activeTab.id) {
+                        // Only attempt injection if we haven't already tried it for this specific call (force=true implies retry)
+                        if (activeTab.id && !force) {
                             try {
                                 await chrome.scripting.executeScript({
                                     target: { tabId: activeTab.id },
                                     files: ['content.js']
                                 });
-                                // Retry analysis after injection
-                                setTimeout(() => performAnalysis(true), 300);
+                                // Retry analysis after injection with a slightly longer delay to ensure script init
+                                setTimeout(() => performAnalysis(true), 500);
                             } catch (injectErr) {
                                 console.error('Injection failed:', injectErr);
                                 setData(null);
                                 setLoading(false);
                             }
                         } else {
+                            // If it fails even after injection, or no tab ID
+                            console.error('Analysis failed after injection retry or no tab available.');
                             setData(null);
                             setLoading(false);
                         }
