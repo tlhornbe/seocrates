@@ -8,7 +8,6 @@
         "activeTab",
         "scripting",
         "tabs",
-        "storage",
         "favicon"
     ],
     "host_permissions": [
